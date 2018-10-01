@@ -11,8 +11,8 @@
 
 # Introduction
 
-A small service for serving files over https/TSL. With the integrated logging system, every request and access will be logged (if activated) and file accesses will be counted for statistic analyses. Also, you can merge multiple file locations on your server to one access for files over the URL.  
-This project is highly work in progress and will be extended in comming updates. Issues and pull requests are appreciated, as always! ;)
+A small service for serving files over https/TSL. With the integrated logging system, every request and access will be logged (if activated) and file accesse will be counted for statistic purpose. Also, you can merge multiple file location on your server to one entry for requests over the URL.  
+This project is highly work in progress and will be further extended in comming updates. Issues and pull requests are appreciated, as always! ;)
 
 ---
 
