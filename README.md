@@ -18,7 +18,7 @@ This project is highly work in progress and will be extended in comming updates.
 
 # Installation & Configuration
 
-*<soon>*
+*`<soon>`*
 
 ---
 
