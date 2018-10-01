@@ -1,8 +1,10 @@
 package main
 
 import (
+	"io"
 	"os"
 	"time"
+	"strconv"
 	"strings"
 	"net/http"
 	"encoding/json"
@@ -54,7 +56,14 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !os.IsNotExist(err) {
-			http.ServeFile(w, r, path + urlPath)
+			// http.ServeFile(w, r, path + urlPath)
+
+			fhandler, _ := os.Open(path + urlPath)
+			w.WriteHeader(status)
+			w.Header().Set("Accept-Ranges", "bytes")
+			w.Header().Set("Content-Length", strconv.FormatInt(stat.Size(), 10))
+			io.CopyN(w, fhandler, stat.Size())
+
 			if mysql != nil && confLogging.AccessCounts {
 				rows, err := mysql.Query("SELECT * FROM accessStats WHERE fullPath = ?;", urlPath)
 				if err == nil {
