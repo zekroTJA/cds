@@ -1,6 +1,6 @@
 <div align="center">
      <!-- <img src="https://zekro.de/src/go_chat_logo.png" width="400"/> -->
-     <h1>~ CDN ~</h1>
+     <h1>~ CDS ~</h1>
      <strong>Small content delivery service - written in Go</strong><br><br>
      <img src="https://forthebadge.com/images/badges/made-with-go.svg" height="30" />&nbsp;
      <img src="https://forthebadge.com/images/badges/60-percent-of-the-time-works-every-time.svg" height="30" />&nbsp;
