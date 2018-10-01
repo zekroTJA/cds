@@ -3,15 +3,27 @@ package main
 import (
 	"os"
 	"fmt"
+	"flag"
+)
+
+var (
+	configFile = flag.String("c", "config.yaml", "config file location")
+	version    = flag.Bool("v", false, "show build version")
 )
 
 func main() {
+	flag.Parse()
+
+	if *version {
+		fmt.Printf("cds v.%s\n© 2018 zekro Development\n", VERSION)
+		return
+	}
 
 	LogInfo(fmt.Sprintf("Initializing CDS (v.%s)", VERSION))
 
-	config, err := OpenConfig("config.yaml")
+	config, err := OpenConfig(*configFile)
 	if os.IsNotExist(err) {
-		err = CreateConfig("config.yaml")
+		err = CreateConfig(*configFile)
 		if err != nil {
 			LogFatal("Could not find config and failed creating config in current run directory:", err)
 		}
