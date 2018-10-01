@@ -16,10 +16,10 @@ tsl:
 # Enter your MySql database credentials here
 # to save logging data
 mysql:
-  address:  "46.228.192.99"
-  username: "cdn"
-  password: "wctURqIbSyjJhUwp"
-  database: "cdn"
+  address:  ""
+  username: ""
+  password: ""
+  database: ""
 
 # Enable or disable logging functions
 logging:
