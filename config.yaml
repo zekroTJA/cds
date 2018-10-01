@@ -1,0 +1,27 @@
+# The port the application will be exposed to
+port:       "1550"
+
+# Locations which will be searched for files
+# set in url path (in order like set below)
+datapaths: [
+  "/var/cdn",
+  "/home/or/where/ever/you/safe/your/data"
+]
+
+# leave these blank for non TSL mode
+tsl:
+  certfile: ""
+  keyfile:  ""
+
+# Enter your MySql database credentials here
+# to save logging data
+mysql:
+  address:  "46.228.192.99"
+  username: "cdn"
+  password: "wctURqIbSyjJhUwp"
+  database: "cdn"
+
+# Enable or disable logging functions
+logging:
+  accesscounts: true
+  requestlog:   true
