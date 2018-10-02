@@ -9,17 +9,21 @@ import (
 var (
 	configFile = flag.String("c", "config.yaml", "config file location")
 	version    = flag.Bool("v", false, "show build version")
+
+	appVersion string = "testing build"
+	appCommit  string = "testing build"
+	appDate    string = "testing build"
 )
 
 func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Printf("cds v.%s\n© 2018 zekro Development\n", VERSION)
+		fmt.Printf("cds v.%s\nCommit: %s\nDate: %s\n© 2018 zekro Development\n", appVersion, appCommit, appDate)
 		return
 	}
 
-	LogInfo(fmt.Sprintf("Initializing CDS (v.%s)", VERSION))
+	LogInfo(fmt.Sprintf("Initializing CDS (v.%s [%s - %s])", appVersion, appCommit, appDate))
 
 	config, err := OpenConfig(*configFile)
 	if os.IsNotExist(err) {
