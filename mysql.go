@@ -4,12 +4,27 @@ import (
 	"fmt"
 	"errors"
 	"strings"
-	"io/ioutil"
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
+var dbScheme = `
+CREATE TABLE IF NOT EXISTS accessStats (
+	fullPath text NOT NULL,
+	fileName text NOT NULL,
+	accesses bigint(20) NOT NULL DEFAULT '0',
+	lastAccess timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  
+CREATE TABLE IF NOT EXISTS requestLog (
+	address text NOT NULL,
+	userAgent text NOT NULL,
+	timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	url text NOT NULL,
+	code int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+`
 
 type MySql struct {
 	Dsn string
@@ -17,14 +32,10 @@ type MySql struct {
 }
 
 func (this *MySql) prepareDatabase(schemefile string) error {
-	bdata, err := ioutil.ReadFile(schemefile)
-	if err != nil {
-		return err
-	}
-	commands := strings.Split(string(bdata), ";")
+	commands := strings.Split(dbScheme, ";")
 	for _, cmd := range commands {
 		if cmd != "" {
-			_, err = this.Query(cmd)
+			_, err := this.Query(cmd)
 			if err != nil {
 				return err
 			}
