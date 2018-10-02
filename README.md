@@ -9,6 +9,13 @@
 
 ---
 
+Branch | Build State
+-------|-------------
+master | [![Build Status](https://travis-ci.org/zekroTJA/cds.svg?branch=master)](https://travis-ci.org/zekroTJA/cds)  
+develop | [![Build Status](https://travis-ci.org/zekroTJA/cds.svg?branch=develop)](https://travis-ci.org/zekroTJA/cds)  
+
+---
+
 # Introduction
 
 A small service for serving files over https/TSL. With the integrated logging system, every request and access will be logged (if activated) and file accesse will be counted for statistic purpose. Also, you can merge multiple file location on your server to one entry for requests over the URL.  
