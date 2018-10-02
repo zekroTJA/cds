@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS accessStats (
 	accesses bigint(20) NOT NULL DEFAULT '0',
 	lastAccess timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-  
 CREATE TABLE IF NOT EXISTS requestLog (
 	address text NOT NULL,
 	userAgent text NOT NULL,
@@ -34,7 +33,7 @@ type MySql struct {
 func (this *MySql) prepareDatabase(schemefile string) error {
 	commands := strings.Split(dbScheme, ";")
 	for _, cmd := range commands {
-		if cmd != "" {
+		if strings.Trim(cmd, " \n\t") != "" {
 			_, err := this.Query(cmd)
 			if err != nil {
 				return err
