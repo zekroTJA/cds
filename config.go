@@ -38,6 +38,9 @@ func OpenConfig(path string) (*Config, error) {
 func CreateConfig(path string) error {
 	config := new(Config)
 	config.Port = "443"
+	config.TLS = new(WebServerCert)
+	config.Logging = new(ConfigLogging)
+	
 	fhandler, err := os.Create(path)
 	if err != nil {
 		return err
