@@ -9,12 +9,12 @@ if [ ! -d builds ]; then
 fi
 
 echo "Building linux_arm..."
-(env GOOS=linux GOARCH=amd64 \
+(env GOOS=linux GOARCH=arm \
     go build -o builds/cds_linux_arm \
     -ldflags "-X main.appDate=$DATE -X main.appVersion=$TAG -X main.appCommit=$COMMIT")
 
 echo "Building linux_amd64.."
-(env GOOS=linux GOARCH=arm \
+(env GOOS=linux GOARCH=amd64 \
     go build -o builds/cds_linux_amd64 \
     -ldflags "-X main.appDate=$DATE -X main.appVersion=$TAG -X main.appCommit=$COMMIT")
 
