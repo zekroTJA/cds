@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/zekroTJA/cds/internal/config"
@@ -12,12 +13,18 @@ import (
 )
 
 var (
-	flagConfig = flag.String("c", "config.yml", "config file location")
-	flagAddr   = flag.String("addr", "", "expose address (overrides config)")
+	flagConfig  = flag.String("c", "config.yml", "config file location")
+	flagAddr    = flag.String("addr", "", "expose address (overrides config)")
+	flagVersion = flag.Bool("v", false, "Display version information")
 )
 
 func main() {
 	flag.Parse()
+
+	if *flagVersion {
+		fmt.Printf("cds v.%s\n© 2019 Ringo Hoffmann (zekro Development)\n", static.AppVersion)
+		os.Exit(0)
+	}
 
 	logger.Info("cds version %s", static.AppVersion)
 

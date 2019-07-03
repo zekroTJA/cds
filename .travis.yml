@@ -1,7 +1,15 @@
+sudo: required
+
 language: go
+
 go: master
+
 script:
   - bash scripts/build.sh
+
+before_install:
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  
 deploy:
   skip_cleanup: true
   provider: releases
