@@ -31,5 +31,3 @@ echo "Building mac_amd64..."
     go build -o ./bin/cds_mac_amd64 \
     -ldflags "-X github.com/zekroTJA/cds/internal/static.appVersion=$TAG -X github.com/zekroTJA/cds/static.Release=TRUE" \
         ./cmd/cds/main.go)
-
-wait
