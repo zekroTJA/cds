@@ -1,0 +1,23 @@
+# This config file should be used when
+# using the porivded Docker image.
+
+mysql:
+  address:  localhost
+  database: cdn2
+  password: ''
+  username: cdn
+web_server:
+  addr:           # can be empty, will be overridden 
+                  # by parameter in Docker container
+  root_redirect: ''
+  storages:
+    - /etc/data   # should be something inside the 
+                  # Docker image, NOT a path to your
+                  # host machine. For this, use
+                  # docker volumes.
+  status_pages:
+    "401": ./web/pages/401.html
+    "403": ./web/pages/403.html
+    "404": ./web/pages/404.html
+  tls:
+    enable: false
