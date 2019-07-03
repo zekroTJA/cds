@@ -29,4 +29,4 @@ EXPOSE 8080
 
 CMD ./bin/cds \
         -c /etc/config/config.yml \
-        -port 8080
+        -addr ":8080"
