@@ -1,16 +1,16 @@
 language: go
 go: master
 script:
-  - bash build.sh
+  - bash scripts/build.sh
 deploy:
   skip_cleanup: true
   provider: releases
   api_key:
     secure: GSR5xkKvGtG1ZI1R3uLJcDzGiXNH2l+O3aE1iJsf628BNMRMBsc6SMypHo9Q3KiMCI1lXCuSp5RTCKxKxcmGSx4/MzudQTLFwiSYAyNCfPF01WjS+DrMT4yILJ4Jx9iyJgKMoW4XgV1CJO+5m3JTwKMzLWvDcogUxD2d3rjAbb0f7FfSNDlt4toknrwQF3TrkE+5KqotpcLS3SND9SpxE7jvJCUhVtV7qF60FUOOELn+TryjQlADlBi+XbSfQbBriqLt7PeGDvtPBGPxTWQiPv+A8caCeFirA44F35fo8u105Hp2Eauwb6tZRRav+/lDna/SZO82CKAD6pn13HXmTqFxE3BL09Jx6vyB48FN+FJ+M/GHaabnr6tdJY0lkzTVwqmae734AjffLwCTJBEbVJbu2uX7azF5ZFSgwGgNKE2mqwpKAU75fWmBSqiYOEiKhEf+Lh/KfbcKJkmtBd7cjCAiMf/zq6H7hDl5HGAFKrRD0BEQGIf8AfLR7gXnvQh2lODxdqoYrH3qTST2PetSsJNsZCslOOGdr6TS+dPDdfpnaJGh46Negb3Sr9zy9AHaGLxmxLVjKCJiM2QhymTSW3YecDvFUrq5lka+TKjXEAOwXPjlrelUd5yTfFSzbVXjtJ1ovfak+IbuaB3oO1nFhaFXkXl8aEpvTL6iZn9Dyuc=
   file:
-    - builds/cds_linux_arm
-    - builds/cds_linux_amd64
-    - builds/cds_win_amd64.exe
-    - builds/cds_mac_amd64
+    - bin/cds_linux_arm
+    - bin/cds_linux_amd64
+    - bin/cds_win_amd64.exe
+    - bin/cds_mac_amd64
   on:
     tags: true

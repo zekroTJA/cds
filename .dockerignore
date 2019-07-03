@@ -1,0 +1,10 @@
+bin/
+config/
+data/
+scripts/
+vendor/
+.gitignore
+.travis.yml
+Gopck.lock
+Makefile
+*.md
