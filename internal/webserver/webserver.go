@@ -1,7 +1,14 @@
 package webserver
 
 import (
+	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"hash"
+	"io"
 	"os"
 
 	"github.com/zekroTJA/cds/internal/logger"
@@ -44,11 +51,11 @@ func (ws *WebServer) handleRequest(ctx *fasthttp.RequestCtx) {
 	switch string(ctx.Method()) {
 	case "GET":
 	case "OPTIONS":
-		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowvalue)
+		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowValue)
 		ctx.SetStatusCode(fasthttp.StatusOK)
 		return
 	default:
-		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowvalue)
+		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowValue)
 		ws.respondError(ctx, fasthttp.StatusMethodNotAllowed, "")
 		return
 	}
@@ -61,10 +68,11 @@ func (ws *WebServer) handleRequest(ctx *fasthttp.RequestCtx) {
 		respondJSON(ctx, fasthttp.StatusOK, map[string]string{
 			"info":       "cds 2.0",
 			"version":    static.AppVersion,
-			"copyright":  "© 2019 Ringo Hoffmann (zekro Development) [MAY NOT THE SERVER HOST]",
+			"copyright":  "© 2019-2020 Ringo Hoffmann (zekro Development) [MAY NOT THE SERVER HOST]",
 			"repository": "https://github.com/zekroTJA/cds",
 			"licence":    "MIT",
 		})
+		return
 	}
 
 	ws.handleServeFile(ctx)
@@ -84,10 +92,15 @@ func (ws *WebServer) handleServeFile(ctx *fasthttp.RequestCtx) {
 		}
 	}()
 
+	reqPath := ctx.Path()
+
 	for _, storage := range ws.config.Storages {
-		path := util.ConcatToString([]byte(storage), ctx.Path())
+		path := util.ConcatToString([]byte(storage), reqPath)
 		fc = ws.checkFile(path)
 		if fc.status < 400 {
+			if ws.handleChecksums(ctx, fc) {
+				return
+			}
 			ctx.SendFile(fc.path)
 			return
 		}
@@ -133,6 +146,50 @@ func (ws *WebServer) checkFile(path string) *fileCheck {
 		path:     path,
 		fileName: fi.Name(),
 	}
+}
+
+func (ws *WebServer) handleChecksums(ctx *fasthttp.RequestCtx, fc *fileCheck) bool {
+	var hasher hash.Hash
+
+	checksum := ctx.QueryArgs().Peek("checksum")
+
+	if bytes.Equal(checksum, checksumMd5) {
+		hasher = md5.New()
+	} else if bytes.Equal(checksum, checksumSha1) {
+		hasher = sha1.New()
+	} else if bytes.Equal(checksum, checksumSha256) {
+		hasher = sha256.New()
+	} else {
+		ws.respondError(ctx, fasthttp.StatusBadRequest,
+			"unsupported hashing method")
+		return true
+	}
+
+	if hasher == nil {
+		return false
+	}
+
+	f, err := os.Open(fc.path)
+	if err != nil {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return true
+	}
+
+	defer f.Close()
+
+	if _, err = io.Copy(hasher, f); err != nil {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return true
+	}
+
+	hash := hasher.Sum(nil)
+
+	ctx.Response.Header.SetContentTypeBytes(contentTypeTextPlain)
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	hex.NewEncoder(ctx).Write(hash)
+	// ctx.Write(hash)
+
+	return true
 }
 
 func (ws *WebServer) ListenAndServeBlocking() error {

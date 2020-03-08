@@ -8,10 +8,16 @@ import (
 )
 
 var (
-	headerAllow           = []byte("Allow")
-	headerXForwardedFor   = []byte("X-Forwarded-For")
-	headerAllowvalue      = []byte("GET,OPTIONS")
-	headerContentTypeJSON = []byte("application/json")
+	checksumSha1   = []byte("sha1")
+	checksumSha256 = []byte("sha256")
+	checksumMd5    = []byte("md5")
+
+	headerAllow         = []byte("Allow")
+	headerXForwardedFor = []byte("X-Forwarded-For")
+	headerAllowValue    = []byte("GET,OPTIONS")
+
+	contentTypeJSON      = []byte("application/json")
+	contentTypeTextPlain = []byte("text/plain; charset=utf-8")
 )
 
 var errorMessages = map[int]string{
@@ -37,7 +43,7 @@ func respondJSON(ctx *fasthttp.RequestCtx, statusCode int, v interface{}) (err e
 		}
 	}
 
-	ctx.Response.Header.SetContentTypeBytes(headerContentTypeJSON)
+	ctx.Response.Header.SetContentTypeBytes(contentTypeJSON)
 	ctx.SetStatusCode(statusCode)
 	_, err = ctx.Write(data)
 

@@ -16,9 +16,9 @@ type stmts struct {
 }
 
 type MySQL struct {
-	db *sql.DB
-
-	stmts *stmts
+	db        *sql.DB
+	stmts     *stmts
+	connected bool
 }
 
 func NewMySQL(cfg *config.MySQL) (m *MySQL, err error) {
@@ -81,14 +81,23 @@ func NewMySQL(cfg *config.MySQL) (m *MySQL, err error) {
 		return
 	}
 
+	m.connected = true
 	return
 }
 
 func (m *MySQL) Close() {
+	if !m.connected {
+		return
+	}
+
 	m.db.Close()
 }
 
 func (m *MySQL) RecordAccess(fullPath, fileName, address, userAgent, url string, code int) error {
+	if !m.connected {
+		return nil
+	}
+
 	err := m.stmts.getAccessStat.QueryRow(fullPath).Scan(new(int))
 	if err == sql.ErrNoRows {
 		if _, err = m.stmts.addAccessStat.Exec(fullPath, fileName); err != nil {

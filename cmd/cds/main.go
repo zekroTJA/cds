@@ -46,12 +46,13 @@ func main() {
 	db, err := database.NewMySQL(cfg.MySQL)
 	if err != nil {
 		logger.Error("DATABASE :: failed connection to database: %s", err.Error())
-		os.Exit(1)
+		logger.Error("DATABASE :: database logging is disabled!")
+	} else {
+		defer func() {
+			logger.Info("DATABASE :: tear down")
+			db.Close()
+		}()
 	}
-	defer func() {
-		logger.Info("DATABASE :: tear down")
-		db.Close()
-	}()
 
 	logger.Info("WEBSERVER :: webserver started on address %s", cfg.WebServer.Addr)
 	err = webserver.NewWebServer(cfg.WebServer, db).
