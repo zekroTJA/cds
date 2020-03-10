@@ -20,5 +20,5 @@ jobs:
         
       - name: Publish the Docker image
         run: |
-          docker login -u zekro -p {{ secrets.DOCKER_PASSWORD }}
+          docker login -u zekro -p ${{ secrets.DOCKER_PASSWORD }}
           docker push zekro/cds:latest
