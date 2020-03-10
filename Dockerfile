@@ -1,25 +1,22 @@
-FROM golang:1.12.6-stretch
+FROM golang:1.13-buster AS build
 
-LABEL maintainer="zekro <conatct@zekro.de>"
-
-ENV PATH="$GOPATH/bin:${PATH}"
-
-RUN go get -u github.com/golang/dep/cmd/dep
-
-RUN apt-get update -y &&\
-    apt-get install -y \
-        git
-
-WORKDIR $GOPATH/src/github.com/zekroTJA/cds
+WORKDIR /build
 
 ADD . .
-
-RUN dep ensure -v
 
 RUN go build -v -o ./bin/cds -ldflags "\
 		-X github.com/zekroTJA/cds/internal/static.AppVersion=$(git describe --tags) \
         -X github.com/zekroTJA/cds/internal/static.Release=TRUE" \
         ./cmd/cds/*.go
+
+
+FROM debian:buster-slim AS final
+
+LABEL maintainer="zekro <conatct@zekro.de>"
+
+WORKDIR /app
+
+COPY --from=build /build/bin .
 
 RUN mkdir -p /etc/config &&\
     mkdir -p /etc/data &&\
@@ -27,6 +24,6 @@ RUN mkdir -p /etc/config &&\
 
 EXPOSE 8080
 
-CMD ./bin/cds \
+CMD /app/cds \
         -c /etc/config/config.yml \
         -addr ":8080"
