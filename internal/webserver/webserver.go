@@ -153,6 +153,10 @@ func (ws *WebServer) handleChecksums(ctx *fasthttp.RequestCtx, fc *fileCheck) bo
 
 	checksum := ctx.QueryArgs().Peek("checksum")
 
+	if checksum == nil {
+		return false
+	}
+
 	if bytes.Equal(checksum, checksumMd5) {
 		hasher = md5.New()
 	} else if bytes.Equal(checksum, checksumSha1) {
