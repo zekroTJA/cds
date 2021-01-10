@@ -14,7 +14,8 @@ var (
 
 	headerAllow         = []byte("Allow")
 	headerXForwardedFor = []byte("X-Forwarded-For")
-	headerAllowValue    = []byte("GET,OPTIONS")
+	headerAuthorization = []byte("Authorization")
+	headerAllowValue    = []byte("GET,OPTIONS,PUT")
 
 	contentTypeJSON      = []byte("application/json")
 	contentTypeTextPlain = []byte("text/plain; charset=utf-8")

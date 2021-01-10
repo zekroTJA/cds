@@ -21,3 +21,9 @@ web_server:
     "404": ./web/pages/404.html
   tls:
     enable: false
+  upload:
+    enable: false
+    secret: WtvTghWBfJ/2FY8C7pMmfYS31/342uAHRLaYuW8ONrs=
+    allow_overwrite: false
+    storage: ""
+    max_size_bytes: 2147484000 # = 2GiB
