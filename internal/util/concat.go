@@ -17,3 +17,12 @@ func ConcatToString(arr ...[]byte) string {
 
 	return string(res)
 }
+
+func StringArrayContains(arr []string, v string) bool {
+	for _, s := range arr {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}

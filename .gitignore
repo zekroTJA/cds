@@ -3,3 +3,4 @@ private.*
 vendor/
 Gopkg.lock
 *.tar.gz
+*.gz

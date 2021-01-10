@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -22,6 +23,11 @@ type MySQL struct {
 }
 
 func NewMySQL(cfg *config.MySQL) (m *MySQL, err error) {
+	if cfg == nil {
+		err = errors.New("not configured")
+		return
+	}
+
 	m = &MySQL{
 		stmts: new(stmts),
 	}
@@ -86,7 +92,7 @@ func NewMySQL(cfg *config.MySQL) (m *MySQL, err error) {
 }
 
 func (m *MySQL) Close() {
-	if !m.connected {
+	if m == nil || !m.connected {
 		return
 	}
 
@@ -94,7 +100,7 @@ func (m *MySQL) Close() {
 }
 
 func (m *MySQL) RecordAccess(fullPath, fileName, address, userAgent, url string, code int) error {
-	if !m.connected {
+	if m == nil || !m.connected {
 		return nil
 	}
 

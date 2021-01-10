@@ -9,7 +9,10 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"mime/multipart"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/zekroTJA/cds/internal/logger"
 	"github.com/zekroTJA/cds/internal/static"
@@ -44,15 +47,22 @@ func NewWebServer(config *config.WebServer, db *database.MySQL) *WebServer {
 		Handler: ws.handleRequest,
 	}
 
+	if ws.config.Upload != nil && ws.config.Upload.MaxSizeBytes > 0 {
+		ws.server.MaxRequestBodySize = ws.config.Upload.MaxSizeBytes
+	}
+
 	return ws
 }
 
 func (ws *WebServer) handleRequest(ctx *fasthttp.RequestCtx) {
-	switch string(ctx.Method()) {
+	switch strings.ToUpper(string(ctx.Method())) {
 	case "GET":
 	case "OPTIONS":
 		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowValue)
 		ctx.SetStatusCode(fasthttp.StatusOK)
+		return
+	case "PUT":
+		ws.handleUpload(ctx)
 		return
 	default:
 		ctx.Response.Header.SetBytesKV(headerAllow, headerAllowValue)
@@ -66,7 +76,7 @@ func (ws *WebServer) handleRequest(ctx *fasthttp.RequestCtx) {
 			return
 		}
 		respondJSON(ctx, fasthttp.StatusOK, map[string]string{
-			"info":       "cds 2.0",
+			"info":       "cds",
 			"version":    static.AppVersion,
 			"copyright":  "© 2019-2020 Ringo Hoffmann (zekro Development) [MAY NOT THE SERVER HOST]",
 			"repository": "https://github.com/zekroTJA/cds",
@@ -76,7 +86,6 @@ func (ws *WebServer) handleRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	ws.handleServeFile(ctx)
-
 }
 
 func (ws *WebServer) handleServeFile(ctx *fasthttp.RequestCtx) {
@@ -191,15 +200,99 @@ func (ws *WebServer) handleChecksums(ctx *fasthttp.RequestCtx, fc *fileCheck) bo
 	ctx.Response.Header.SetContentTypeBytes(contentTypeTextPlain)
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	hex.NewEncoder(ctx).Write(hash)
-	// ctx.Write(hash)
 
 	return true
+}
+
+func (ws *WebServer) handleUpload(ctx *fasthttp.RequestCtx) {
+	cfg := ws.config.Upload
+	if cfg == nil || !cfg.Enable || cfg.Secret == "" || cfg.Storage == "" {
+		ws.respondError(ctx, fasthttp.StatusMethodNotAllowed, "")
+		return
+	}
+
+	headerContentType := string(ctx.Request.Header.ContentType())
+	if !strings.HasPrefix(headerContentType, "multipart/form-data") {
+		ws.respondError(ctx, fasthttp.StatusBadRequest, "invalid content type")
+		return
+	}
+
+	baundary := headerContentType[strings.Index(headerContentType, "boundary=")+len("boundary="):]
+
+	authHeader := string(ctx.Request.Header.PeekBytes(headerAuthorization))
+	isAuthorized := authHeader != "" &&
+		strings.HasPrefix(strings.ToLower(authHeader), "basic ") &&
+		authHeader[6:] == cfg.Secret
+
+	if !isAuthorized {
+		ws.respondError(ctx, fasthttp.StatusUnauthorized, "")
+		return
+	}
+
+	if !util.StringArrayContains(ws.config.Storages, cfg.Storage) {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, "bad upload storage configuration")
+		return
+	}
+
+	reader := multipart.NewReader(bytes.NewBuffer(ctx.Request.Body()), baundary)
+	var part *multipart.Part
+	var err error
+	for {
+		part, err = reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			ws.respondError(ctx, fasthttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		if strings.ToLower(part.FormName()) == "file" {
+			break
+		}
+	}
+
+	filePath := path.Join(cfg.Storage, string(ctx.Request.URI().Path()))
+
+	if stat, err := os.Stat(filePath); err == nil && !stat.IsDir() && !cfg.AllowOverwrite {
+		ws.respondError(ctx, fasthttp.StatusBadRequest, "file already exists")
+		return
+	}
+
+	dir := path.Dir(filePath)
+	stat, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, os.ModeDir); err != nil {
+			ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+			return
+		}
+	} else if err != nil {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	} else if !stat.IsDir() {
+		ws.respondError(ctx, fasthttp.StatusBadRequest, "existing dir contains file name")
+		return
+	}
+
+	fh, err := os.Create(filePath)
+	if err != nil {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+	defer fh.Close()
+
+	if _, err = io.Copy(fh, part); err != nil {
+		ws.respondError(ctx, fasthttp.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(ctx, fasthttp.StatusCreated, nil)
 }
 
 func (ws *WebServer) ListenAndServeBlocking() error {
 	tls := ws.config.TLS
 
-	if tls.Enable {
+	if tls != nil && tls.Enable {
 		if tls.CertFile == "" || tls.KeyFile == "" {
 			return errors.New("cert file and key file must be specified")
 		}

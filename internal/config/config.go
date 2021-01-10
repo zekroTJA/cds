@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/ghodss/yaml"
+	"github.com/zekroTJA/cds/internal/util"
 )
 
 type Main struct {
@@ -14,17 +15,26 @@ type Main struct {
 }
 
 type WebServer struct {
-	Addr         string         `json:"addr"`
-	RootRedirect string         `json:"root_redirect"`
-	TLS          *WebServerTSL  `json:"tls"`
-	StatusPages  map[int]string `json:"status_pages"`
-	Storages     []string       `json:"storages"`
+	Addr         string           `json:"addr"`
+	RootRedirect string           `json:"root_redirect"`
+	TLS          *WebServerTSL    `json:"tls"`
+	Upload       *WebServerUpload `json:"upload"`
+	StatusPages  map[int]string   `json:"status_pages"`
+	Storages     []string         `json:"storages"`
 }
 
 type WebServerTSL struct {
 	Enable   bool   `json:"enable"`
 	CertFile string `json:"cert_file"`
 	KeyFile  string `json:"key_file"`
+}
+
+type WebServerUpload struct {
+	Enable         bool   `json:"enable"`
+	Secret         string `json:"secret"`
+	AllowOverwrite bool   `json:"allow_overwrite"`
+	Storage        string `json:"storage"`
+	MaxSizeBytes   int    `json:"max_size_bytes"`
 }
 
 type MySQL struct {
@@ -50,6 +60,11 @@ func Open(loc string) (*Main, error) {
 }
 
 func createDefault(loc string) error {
+	randSecret, err := util.GetRandBase64Str(32)
+	if err != nil {
+		return err
+	}
+
 	def := &Main{
 		WebServer: &WebServer{
 			Addr:         ":80",
@@ -60,6 +75,13 @@ func createDefault(loc string) error {
 			},
 			TLS: &WebServerTSL{
 				Enable: false,
+			},
+			Upload: &WebServerUpload{
+				Enable:         false,
+				Secret:         randSecret,
+				AllowOverwrite: false,
+				Storage:        "",
+				MaxSizeBytes:   2 * 1024 * 1024 * 1024,
 			},
 		},
 		MySQL: &MySQL{
