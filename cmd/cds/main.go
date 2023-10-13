@@ -2,61 +2,89 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
-
-	"github.com/zekroTJA/cds/internal/config"
-	"github.com/zekroTJA/cds/internal/database"
-	"github.com/zekroTJA/cds/internal/logger"
-	"github.com/zekroTJA/cds/internal/static"
-	"github.com/zekroTJA/cds/internal/webserver"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/zekroTJA/cds/pkg/config"
+	"github.com/zekroTJA/cds/pkg/server"
+	"github.com/zekroTJA/cds/pkg/stores"
+	"github.com/zekrotja/rogu/level"
+	"github.com/zekrotja/rogu/log"
+	"strings"
 )
 
 var (
-	flagConfig  = flag.String("c", "config.yml", "config file location")
-	flagAddr    = flag.String("addr", "", "expose address (overrides config)")
-	flagVersion = flag.Bool("v", false, "Display version information")
+	flagConfig = flag.String("c", "config.toml", "config file location")
 )
 
 func main() {
 	flag.Parse()
 
-	if *flagVersion {
-		fmt.Printf("cds v.%s\n© 2019 Ringo Hoffmann (zekro Development)\n", static.AppVersion)
-		os.Exit(0)
-	}
-
-	logger.Info("cds version %s", static.AppVersion)
-
-	logger.Info("CONFIG :: initializing...")
-	cfg, err := config.Open(*flagConfig)
+	cfg, err := config.Parse(*flagConfig, "CDS_", config.Default)
 	if err != nil {
-		logger.Error("CONFIG :: failed loading: %s", err.Error())
-		os.Exit(1)
-	} else if cfg == nil {
-		logger.Error("CONFIG :: config file was not found. A defautl config file was created. " +
-			"Edit this file and restart after.")
-		os.Exit(0)
+		log.Fatal().Err(err).Msg("failed parsing config")
 	}
 
-	if *flagAddr != "" {
-		cfg.WebServer.Addr = *flagAddr
+	lvl, ok := level.LevelFromString(cfg.Logging.Level)
+	if !ok {
+		log.Fatal().Field("level", cfg.Logging.Level).Msg("invalid log level")
+	}
+	log.SetLevel(lvl)
+
+	log.Debug().Msgf("Config: %s", spew.Sdump(cfg))
+
+	storeList := make(stores.Stores, 0, len(cfg.Stores))
+	for _, st := range cfg.Stores {
+		var (
+			store stores.Store
+			err   error
+		)
+
+		typ := strings.ToLower(string(st.Type))
+
+		switch config.StoreType(typ) {
+		case config.StoreTypeLocal:
+			store, err = stores.NewLocal(st.Path)
+		case config.StoreTypeS3:
+			store, err = stores.NewS3(
+				st.Endpoint, st.AccessKey, st.SecretKey, st.Region, st.Bucket, st.Path, st.Secure)
+		default:
+			log.Fatal().Field("type", typ).Msg("invalid or unsupported store type")
+		}
+
+		if err != nil {
+			log.Error().Err(err).Fields("type", typ, "entrypoint", st.Entrypoint).
+				Msg("failed initializing storage")
+			continue
+		}
+
+		storeList = append(storeList, stores.StoresEntry{
+			Entrypoint:   prefixEntrypoint(st.Entrypoint),
+			Listable:     st.Listable,
+			CacheControl: st.CacheControl,
+			Store:        store,
+		})
 	}
 
-	db, err := database.NewMySQL(cfg.MySQL)
-	if err != nil {
-		logger.Error("DATABASE :: failed connection to database: %s", err.Error())
-		logger.Error("DATABASE :: database logging is disabled!")
+	if ln := len(storeList); ln == 0 {
+		log.Warn().Msg("No stores have been initialized")
 	} else {
-		defer func() {
-			logger.Info("DATABASE :: tear down")
-			db.Close()
-		}()
+		log.Info().Field("n", len(storeList)).Msg("Stores initialized")
 	}
 
-	logger.Info("WEBSERVER :: webserver started on address %s", cfg.WebServer.Addr)
-	err = webserver.NewWebServer(cfg.WebServer, db).
-		ListenAndServeBlocking()
-	logger.Error("WEBSERVER :: failed starting web server: %s", err.Error())
-	defer logger.Info("WEBSERVER :: tear down")
+	srv, err := server.New(storeList)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed initializing web server")
+	}
+
+	log.Info().Field("address", cfg.Address).Msg("Starting listening and serving ...")
+	err = srv.ListenAndServe(cfg.Address)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed binding web server")
+	}
+}
+
+func prefixEntrypoint(e string) string {
+	if e == "" || e[0] != '/' {
+		return "/" + e
+	}
+	return e
 }

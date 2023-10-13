@@ -1,29 +1,15 @@
-FROM golang:1.13-buster AS build
-
+FROM golang:1.21-alpine AS build
 WORKDIR /build
-
-ADD . .
-
-RUN go build -v -o ./bin/cds -ldflags "\
-		-X github.com/zekroTJA/cds/internal/static.AppVersion=$(git describe --tags) \
-        -X github.com/zekroTJA/cds/internal/static.Release=TRUE" \
-        ./cmd/cds/*.go
+COPY cmd cmd
+COPY pkg pkg
+COPY go.mod .
+COPY go.sum .
+RUN go build -o dist/cds cmd/cds/main.go
 
 
-FROM debian:buster-slim AS final
-
-LABEL maintainer="zekro <conatct@zekro.de>"
-
+FROM alpine
 WORKDIR /app
-
-COPY --from=build /build/bin .
-
-RUN mkdir -p /etc/config &&\
-    mkdir -p /etc/data &&\
-    mkdir -p /etc/pages
-
-EXPOSE 8080
-
-CMD /app/cds \
-        -c /etc/config/config.yml \
-        -addr ":8080"
+COPY --from=build /build/dist/cds /app/cds
+EXPOSE 80
+ENV CDS_ADDRESS="0.0.0.0:80"
+ENTRYPOINT [ "/app/cds" ]
