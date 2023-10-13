@@ -5,7 +5,9 @@ import (
 	"github.com/zekroTJA/cds/pkg/stores"
 	"github.com/zekrotja/rogu/log"
 	"html/template"
+	"io"
 	"net/http"
+	"path"
 )
 
 //go:embed pages
@@ -25,4 +27,16 @@ func renderIndex(w http.ResponseWriter, dirName string, entries []stores.PathEnt
 		log.Error().Err(err).Msg("failed rendering index")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func servePage(w http.ResponseWriter, status int, pth string) {
+	p, err := pages.Open(path.Join("pages", pth))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.Copy(w, p)
 }

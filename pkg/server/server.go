@@ -85,7 +85,7 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNotFound)
+	handleNotFound(w)
 }
 
 func (t *Server) ListenAndServe(address string) error {
@@ -94,7 +94,11 @@ func (t *Server) ListenAndServe(address string) error {
 
 func handleError(err error, w http.ResponseWriter, r *http.Request, msg string) {
 	log.Error().Err(err).Fields("path", r.URL.Path).Msg(msg)
-	w.WriteHeader(http.StatusInternalServerError)
+	servePage(w, http.StatusInternalServerError, "500.html")
+}
+
+func handleNotFound(w http.ResponseWriter) {
+	servePage(w, http.StatusNotFound, "404.html")
 }
 
 func subPath(path, entrypoint string) string {
