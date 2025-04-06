@@ -5,4 +5,7 @@ Gopkg.lock
 *.tar.gz
 *.gz
 
+/.idea
+
 config.toml
+testdata/
