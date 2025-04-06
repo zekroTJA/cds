@@ -1,26 +1,34 @@
 package stores
 
 import (
+	"errors"
 	"io"
 	"time"
 )
 
-type PathEntry struct {
-	Name  string
-	IsDir bool
+var (
+	ErrNotExist = errors.New("entity does not exist")
+)
+
+type Metadata struct {
+	Name         string
+	IsDir        bool
+	LastModified *time.Time
+	Size         int64
+	MimeType     string
 }
 
 type Store interface {
-	Get(path string) (rc io.ReadCloser, mimeType string, lastModified time.Time, err error)
-	List(path string) ([]PathEntry, error)
+	Get(path string) (rc io.ReadCloser, metadata *Metadata, err error)
+	List(path string) ([]*Metadata, error)
 	IsNotExist(err error) bool
 }
 
-type StoresEntry struct {
+type StoreEntry struct {
 	Entrypoint   string
 	Listable     bool
 	CacheControl string
 	Store        Store
 }
 
-type Stores []StoresEntry
+type Stores []StoreEntry

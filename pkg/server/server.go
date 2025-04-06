@@ -1,12 +1,13 @@
 package server
 
 import (
-	"github.com/zekroTJA/cds/pkg/stores"
-	"github.com/zekrotja/rogu/log"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/zekroTJA/cds/pkg/stores"
+	"github.com/zekrotja/rogu/log"
 )
 
 type Server struct {
@@ -18,20 +19,22 @@ func New(storeMap stores.Stores) (t *Server, err error) {
 
 	t.stores = storeMap
 
+	http.ServeMux{}
+
 	return t, nil
 }
 
 func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, e := range t.stores {
-		if strings.HasPrefix(r.URL.Path, e.Entrypoint) {
-			sub := subPath(r.URL.Path, e.Entrypoint)
+	for _, store := range t.stores {
+		if strings.HasPrefix(r.URL.Path, store.Entrypoint) {
+			sub := subPath(r.URL.Path, store.Entrypoint)
 			if sub == "" {
 				continue
 			}
 
-			rc, mimeType, lastModified, err := e.Store.Get(sub)
+			rc, metadata, err := store.Store.Get(sub)
 			if err != nil {
-				if e.Store.IsNotExist(err) {
+				if store.Store.IsNotExist(err) {
 					continue
 				}
 				handleError(err, w, r, "failed serving object")
@@ -39,14 +42,19 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			defer rc.Close()
 
-			cacheControl := e.CacheControl
+			cacheControl := store.CacheControl
 			if cacheControl == "" {
 				cacheControl = "public, max-age=2592000, must-revalidate"
 			}
-
 			w.Header().Set("Cache-Control", cacheControl)
-			w.Header().Set("Content-Type", mimeType)
-			w.Header().Set("Last-Modified", lastModified.Format(time.RFC1123))
+
+			if metadata.MimeType != "" {
+				w.Header().Set("Content-Type", metadata.MimeType)
+			}
+
+			if metadata.LastModified != nil {
+				w.Header().Set("Last-Modified", metadata.LastModified.Format(time.RFC1123))
+			}
 
 			_, err = io.Copy(w, rc)
 			if err != nil {

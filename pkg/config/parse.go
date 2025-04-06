@@ -1,18 +1,15 @@
 package config
 
-import "os"
-
 import (
+	"os"
+
 	"github.com/joho/godotenv"
 	"github.com/traefik/paerser/env"
 	"github.com/traefik/paerser/file"
 )
 
-func Parse(cfgFile string, envPrefix string, def ...Config) (Config, error) {
-	cfg := Config{}
-	if len(def) > 0 {
-		cfg = def[0]
-	}
+func Parse(cfgFile string, envPrefix string, def Config) (Config, error) {
+	cfg := def
 
 	err := file.Decode(cfgFile, &cfg)
 	if err != nil && !os.IsNotExist(err) {

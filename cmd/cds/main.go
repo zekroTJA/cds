@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
+	"strings"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/zekroTJA/cds/pkg/config"
 	"github.com/zekroTJA/cds/pkg/server"
 	"github.com/zekroTJA/cds/pkg/stores"
 	"github.com/zekrotja/rogu/level"
 	"github.com/zekrotja/rogu/log"
-	"strings"
 )
 
 var (
@@ -23,7 +24,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed parsing config")
 	}
 
-	lvl, ok := level.LevelFromString(cfg.Logging.Level)
+	lvl, ok := level.FromString(cfg.Logging.Level)
 	if !ok {
 		log.Fatal().Field("level", cfg.Logging.Level).Msg("invalid log level")
 	}
@@ -56,7 +57,7 @@ func main() {
 			continue
 		}
 
-		storeList = append(storeList, stores.StoresEntry{
+		storeList = append(storeList, stores.StoreEntry{
 			Entrypoint:   prefixEntrypoint(st.Entrypoint),
 			Listable:     st.Listable,
 			CacheControl: st.CacheControl,

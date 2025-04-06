@@ -2,13 +2,13 @@ package stores
 
 import (
 	"context"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 	"net/http"
 	"path"
 	"strings"
-	"time"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type S3 struct {
@@ -37,31 +37,35 @@ func NewS3(endpoint, accessKey, secretKey, region, bucket, basePath string, secu
 	return t, nil
 }
 
-func (t *S3) Get(pth string) (rc io.ReadCloser, mimeType string, lastModified time.Time, err error) {
+func (t *S3) Get(pth string) (io.ReadCloser, *Metadata, error) {
 	pth = path.Join(t.basePath, pth)
 	obj, err := t.client.GetObject(context.Background(), t.bucket, pth, minio.GetObjectOptions{})
 	if err != nil {
-		return nil, "", time.Time{}, err
+		return nil, nil, err
 	}
 
 	stat, err := obj.Stat()
 	if err != nil {
-		return nil, "", time.Time{}, err
+		return nil, nil, err
 	}
 
-	mimeType = stat.ContentType
-	lastModified = stat.LastModified
+	metadata := Metadata{
+		Name:         path.Base(pth),
+		LastModified: &stat.LastModified,
+		Size:         stat.Size,
+		MimeType:     stat.ContentType,
+	}
 
-	return obj, mimeType, lastModified, err
+	return obj, &metadata, err
 }
 
-func (t *S3) List(path string) ([]PathEntry, error) {
+func (t *S3) List(path string) ([]*Metadata, error) {
 	cInfo := t.client.ListObjects(context.Background(), t.bucket, minio.ListObjectsOptions{
 		Prefix: path,
 		UseV1:  false,
 	})
 
-	var res []PathEntry
+	var res []*Metadata
 	for i := range cInfo {
 		if i.Err != nil {
 			return nil, i.Err
@@ -72,10 +76,15 @@ func (t *S3) List(path string) ([]PathEntry, error) {
 			continue
 		}
 
-		res = append(res, PathEntry{
-			IsDir: strings.HasSuffix(name, "/"),
-			Name:  name,
-		})
+		metadata := Metadata{
+			Name:         name,
+			IsDir:        strings.HasSuffix(name, "/"),
+			LastModified: &i.LastModified,
+			Size:         i.Size,
+			MimeType:     i.ContentType,
+		}
+
+		res = append(res, &metadata)
 	}
 
 	return res, nil

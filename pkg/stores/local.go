@@ -2,12 +2,10 @@ package stores
 
 import (
 	"io"
-	"io/fs"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type Local struct {
@@ -24,53 +22,67 @@ func NewLocal(basePath string) (*Local, error) {
 	return t, nil
 }
 
-func (t *Local) Get(path string) (rc io.ReadCloser, mimeType string, lastModified time.Time, err error) {
+func (t *Local) Get(path string) (io.ReadCloser, *Metadata, error) {
 	path = t.path(path)
 
 	stat, err := os.Stat(path)
 	if err != nil {
-		return nil, "", time.Time{}, err
+		return nil, nil, err
 	}
 
 	if stat.IsDir() {
-		return nil, "", time.Time{}, fs.ErrNotExist
+		return nil, nil, ErrNotExist
 	}
 
-	lastModified = stat.ModTime()
+	var metadata Metadata
+
+	metadata.Name = stat.Name()
+	metadata.Size = stat.Size()
+
+	lastMod := stat.ModTime()
+	metadata.LastModified = &lastMod
 
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, "", time.Time{}, err
+		return nil, nil, err
 	}
 
 	ext := filepath.Ext(path)
-	mimeType = mime.TypeByExtension(ext)
+	metadata.MimeType = mime.TypeByExtension(ext)
 
-	if mimeType == "" {
+	if metadata.MimeType == "" {
 		var buf [512]byte
 		n, _ := io.ReadFull(f, buf[:])
-		mimeType = http.DetectContentType(buf[:n])
-		_, err := f.Seek(0, io.SeekStart) // rewind to output whole file
+		metadata.MimeType = http.DetectContentType(buf[:n])
+		_, err := f.Seek(0, io.SeekStart)
 		if err != nil {
-			return nil, "", time.Time{}, err
+			return nil, nil, err
 		}
 	}
 
-	return f, mimeType, lastModified, nil
+	return f, &metadata, nil
 }
 
-func (t *Local) List(path string) ([]PathEntry, error) {
+func (t *Local) List(path string) ([]*Metadata, error) {
 	entries, err := os.ReadDir(t.path(path))
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]PathEntry, 0, len(entries))
-	for _, e := range entries {
-		res = append(res, PathEntry{
-			Name:  e.Name(),
-			IsDir: e.IsDir(),
-		})
+	res := make([]*Metadata, 0, len(entries))
+	for _, entry := range entries {
+		var metadata Metadata
+		metadata.Name = entry.Name()
+		metadata.IsDir = entry.IsDir()
+
+		info, err := entry.Info()
+		if err == nil {
+			lastMod := info.ModTime()
+			metadata.LastModified = &lastMod
+			metadata.Size = info.Size()
+		}
+
+		res = append(res, &metadata)
 	}
 
 	return res, nil
