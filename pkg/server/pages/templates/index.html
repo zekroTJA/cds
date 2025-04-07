@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Index of {{ .DirName }}/</title>
+  <title>Index of {{ .DirName }}</title>
 
   <style>
     body {
@@ -17,23 +17,47 @@
       line-height: 1.5em;
       padding: 0;
     }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td, th {
+      border: solid 1px #686868;
+      padding: 0.2em 0.5em;
+    }
+
+    tbody > tr:hover {
+        background-color: #e5e5e5;
+    }
+
+    a {
+        text-decoration: none;
+    }
   </style>
 </head>
 <body>
 <h1>Index of {{ .DirName }}</h1>
-<ul>
-  {{ range $entry := .Entries }}
-  <li>
-    <a href="{{ $entry.Name }}">
-      {{ if $entry.IsDir }}
-        📂
-      {{ else }}
-        📄
-      {{ end }}
-      {{ $entry.Name }}
-    </a>
-  </li>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Last Modified</th>
+      <th>Size</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ range .Entries }}
+    <tr>
+      <td>
+        <a href="{{ .Name }}">{{ if .IsDir }}📂{{ else }}📄{{ end }} {{ .Name }}</a>
+      </td>
+      <td>{{ if .LastModified }}{{ .LastModified.Format "2006-01-02 15:04:05" }}{{end}}</td>
+      <td>{{ .Size | humanBytes }}</td>
+    </tr>
   {{ end }}
-</ul>
+  </tbody>
+</table>
 </body>
 </html>

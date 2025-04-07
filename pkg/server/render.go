@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/dustin/go-humanize"
 	"github.com/zekroTJA/cds/pkg/stores"
 	"github.com/zekrotja/rogu/log"
 )
@@ -14,7 +15,11 @@ import (
 //go:embed pages
 var pages embed.FS
 
-var tpl = template.Must(template.New("").ParseFS(pages, "pages/templates/*.html"))
+var tpl = template.Must(template.New("").
+	Funcs(template.FuncMap{
+		"humanBytes": func(size int64) string { return humanize.Bytes(uint64(size)) },
+	}).
+	ParseFS(pages, "pages/templates/*.html"))
 
 func renderIndex(w http.ResponseWriter, dirName string, entries []*stores.Metadata) {
 	err := tpl.ExecuteTemplate(w, "index.html", struct {
