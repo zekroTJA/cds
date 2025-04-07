@@ -1,13 +1,8 @@
 package stores
 
 import (
-	"errors"
 	"io"
 	"time"
-)
-
-var (
-	ErrNotExist = errors.New("entity does not exist")
 )
 
 type Metadata struct {
@@ -30,5 +25,3 @@ type StoreEntry struct {
 	CacheControl string
 	Store        Store
 }
-
-type Stores []StoreEntry

@@ -2,12 +2,13 @@ package server
 
 import (
 	"embed"
-	"github.com/zekroTJA/cds/pkg/stores"
-	"github.com/zekrotja/rogu/log"
 	"html/template"
 	"io"
 	"net/http"
 	"path"
+
+	"github.com/zekroTJA/cds/pkg/stores"
+	"github.com/zekrotja/rogu/log"
 )
 
 //go:embed pages
@@ -15,10 +16,10 @@ var pages embed.FS
 
 var tpl = template.Must(template.New("").ParseFS(pages, "pages/templates/*.html"))
 
-func renderIndex(w http.ResponseWriter, dirName string, entries []stores.PathEntry) {
+func renderIndex(w http.ResponseWriter, dirName string, entries []*stores.Metadata) {
 	err := tpl.ExecuteTemplate(w, "index.html", struct {
 		DirName string
-		Entries []stores.PathEntry
+		Entries []*stores.Metadata
 	}{
 		DirName: dirName,
 		Entries: entries,

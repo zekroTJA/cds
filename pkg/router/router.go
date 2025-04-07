@@ -10,8 +10,8 @@ type Router[H any] struct {
 }
 
 type routeNode[H any] struct {
-	pattern []string
-	handler *H
+	pattern  []string
+	handlers []H
 
 	children mapping[string, *routeNode[H]]
 }
@@ -19,7 +19,7 @@ type routeNode[H any] struct {
 func (t *routeNode[H]) add(sub []string, pattern []string, handler H) {
 	if len(sub) == 0 {
 		t.pattern = pattern
-		t.handler = &handler
+		t.handlers = append(t.handlers, handler)
 		return
 	}
 
@@ -35,15 +35,15 @@ func (t *routeNode[H]) add(sub []string, pattern []string, handler H) {
 	t.children.add(key, node)
 }
 
-func (t *routeNode[H]) match(pattern []string) (handler *H, sub string) {
+func (t *routeNode[H]) match(pattern []string) (handlers []H, sub string) {
 	if len(pattern) == 0 {
-		return t.handler, ""
+		return t.handlers, ""
 	}
 
 	key := pattern[0]
 	node, ok := t.children.get(key)
 	if !ok {
-		return t.handler, strings.Join(pattern, "/")
+		return t.handlers, strings.Join(pattern, "/")
 	}
 
 	return node.match(pattern[1:])
@@ -54,13 +54,13 @@ func (t *Router[H]) Add(pattern string, handler H) {
 	t.root.add(patternSplit, patternSplit, handler)
 }
 
-func (t *Router[H]) Match(pattern string) (handler H, sub string, ok bool) {
+func (t *Router[H]) Match(pattern string) (handlers []H, sub string, ok bool) {
 	patternSplit := splitPattern(pattern)
-	matchedHandler, sub := t.root.match(patternSplit)
-	if matchedHandler == nil {
-		return handler, "", false
+	matchedHandlers, sub := t.root.match(patternSplit)
+	if len(matchedHandlers) == 0 {
+		return nil, "", false
 	}
-	return *matchedHandler, sub, true
+	return matchedHandlers, sub, true
 }
 
 func splitPattern(pattern string) []string {

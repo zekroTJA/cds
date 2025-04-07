@@ -2,6 +2,7 @@ package stores
 
 import (
 	"io"
+	"io/fs"
 	"mime"
 	"net/http"
 	"os"
@@ -31,7 +32,7 @@ func (t *Local) Get(path string) (io.ReadCloser, *Metadata, error) {
 	}
 
 	if stat.IsDir() {
-		return nil, nil, ErrNotExist
+		return nil, nil, fs.ErrNotExist
 	}
 
 	var metadata Metadata

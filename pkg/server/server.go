@@ -6,32 +6,36 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zekroTJA/cds/pkg/router"
 	"github.com/zekroTJA/cds/pkg/stores"
 	"github.com/zekrotja/rogu/log"
 )
 
 type Server struct {
-	stores stores.Stores
+	router *router.Router[stores.StoreEntry]
 }
 
-func New(storeMap stores.Stores) (t *Server, err error) {
+func New(storeEntries []stores.StoreEntry) (t *Server, err error) {
 	t = &Server{}
 
-	t.stores = storeMap
+	t.router = &router.Router[stores.StoreEntry]{}
 
-	http.ServeMux{}
+	for _, entry := range storeEntries {
+		t.router.Add(entry.Entrypoint, entry)
+	}
 
 	return t, nil
 }
 
 func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, store := range t.stores {
-		if strings.HasPrefix(r.URL.Path, store.Entrypoint) {
-			sub := subPath(r.URL.Path, store.Entrypoint)
-			if sub == "" {
-				continue
-			}
+	storeEntries, sub, ok := t.router.Match(r.URL.Path)
+	if !ok {
+		handleNotFound(w)
+		return
+	}
 
+	if sub != "" {
+		for _, store := range storeEntries {
 			rc, metadata, err := store.Store.Get(sub)
 			if err != nil {
 				if store.Store.IsNotExist(err) {
@@ -65,16 +69,15 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var entries []stores.PathEntry
-	for _, st := range t.stores {
-		if !st.Listable || !strings.HasPrefix(r.URL.Path, st.Entrypoint) {
+	var entries []*stores.Metadata
+	for _, store := range storeEntries {
+		if !store.Listable {
 			continue
 		}
 
-		sub := subPath(r.URL.Path, st.Entrypoint)
-		e, err := st.Store.List(sub)
+		e, err := store.Store.List(sub)
 		if err != nil {
-			if !st.Store.IsNotExist(err) {
+			if !store.Store.IsNotExist(err) {
 				handleError(err, w, r, "failed listing storage entries")
 			}
 			continue
@@ -107,12 +110,4 @@ func handleError(err error, w http.ResponseWriter, r *http.Request, msg string) 
 
 func handleNotFound(w http.ResponseWriter) {
 	servePage(w, http.StatusNotFound, "404.html")
-}
-
-func subPath(path, entrypoint string) string {
-	sub := path[len(entrypoint):]
-	if sub != "" && sub[0] == '/' {
-		sub = sub[1:]
-	}
-	return sub
 }

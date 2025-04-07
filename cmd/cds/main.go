@@ -32,7 +32,7 @@ func main() {
 
 	log.Debug().Msgf("Config: %s", spew.Sdump(cfg))
 
-	storeList := make(stores.Stores, 0, len(cfg.Stores))
+	storeList := make([]stores.StoreEntry, 0, len(cfg.Stores))
 	for _, st := range cfg.Stores {
 		var (
 			store stores.Store
