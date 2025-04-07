@@ -9,7 +9,6 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/zekrotja/rogu/log"
 )
 
 type S3 struct {
@@ -40,7 +39,6 @@ func NewS3(endpoint, accessKey, secretKey, region, bucket, basePath string, secu
 
 func (t *S3) Get(pth string) (io.ReadCloser, *Metadata, error) {
 	pth = path.Join(t.basePath, pth)
-	log.Debug().Field("pth", pth).Msg("s3::Get")
 	obj, err := t.client.GetObject(context.Background(), t.bucket, pth, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, nil, err

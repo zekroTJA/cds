@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -10,6 +11,18 @@ import (
 	"github.com/zekroTJA/cds/pkg/stores"
 	"github.com/zekrotja/rogu/log"
 )
+
+type ResponseType string
+
+const (
+	ResponseTypeJSON ResponseType = "json"
+	ResponseTypeHTML ResponseType = "html"
+)
+
+type ErrorModel struct {
+	Status  int
+	Message string
+}
 
 type Server struct {
 	router *router.Router[stores.StoreEntry]
@@ -30,7 +43,7 @@ func New(storeEntries []stores.StoreEntry) (t *Server, err error) {
 func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	storeEntries, sub, ok := t.router.Match(r.URL.Path)
 	if !ok {
-		handleNotFound(w)
+		handleNotFound(r, w)
 		return
 	}
 
@@ -92,22 +105,62 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		renderIndex(w, r.URL.Path, entries)
+		handleIndex(r, w, entries)
 		return
 	}
 
-	handleNotFound(w)
+	handleNotFound(r, w)
 }
 
 func (t *Server) ListenAndServe(address string) error {
 	return http.ListenAndServe(address, t)
 }
 
-func handleError(err error, w http.ResponseWriter, r *http.Request, msg string) {
-	log.Error().Err(err).Fields("path", r.URL.Path).Msg(msg)
-	servePage(w, http.StatusInternalServerError, "500.html")
+func handleIndex(r *http.Request, w http.ResponseWriter, entries []*stores.Metadata) {
+	switch responseType(r) {
+	case ResponseTypeHTML:
+		renderIndex(w, r.URL.Path, entries)
+	case ResponseTypeJSON:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(entries)
+	}
 }
 
-func handleNotFound(w http.ResponseWriter) {
-	servePage(w, http.StatusNotFound, "404.html")
+func handleError(err error, w http.ResponseWriter, r *http.Request, msg string) {
+	log.Error().Err(err).Fields("path", r.URL.Path).Msg(msg)
+	switch responseType(r) {
+	case ResponseTypeHTML:
+		servePage(w, http.StatusInternalServerError, "500.html")
+	case ResponseTypeJSON:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(ErrorModel{Status: http.StatusInternalServerError, Message: "An unexpected internal server error has occurred"})
+	}
+
+}
+
+func handleNotFound(r *http.Request, w http.ResponseWriter) {
+	switch responseType(r) {
+	case ResponseTypeHTML:
+		servePage(w, http.StatusNotFound, "404.html")
+	case ResponseTypeJSON:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(ErrorModel{Status: http.StatusNotFound, Message: "The requested resource is not or no more available"})
+	}
+}
+
+func responseType(r *http.Request) ResponseType {
+	typ := ResponseType(r.URL.Query().Get("format"))
+	if typ == ResponseTypeJSON {
+		return ResponseTypeJSON
+	}
+	if typ == ResponseTypeHTML {
+		return ResponseTypeHTML
+	}
+
+	accept := r.Header.Get("Accept")
+	if strings.Contains(accept, "text/html") {
+		return ResponseTypeHTML
+	}
+
+	return ResponseTypeJSON
 }
