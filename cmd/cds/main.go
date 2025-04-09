@@ -48,7 +48,8 @@ func main() {
 			store, err = stores.NewS3(
 				st.Endpoint, st.AccessKey, st.SecretKey, st.Region, st.Bucket, st.Path, st.Secure)
 		default:
-			log.Fatal().Field("type", typ).Msg("invalid or unsupported store type")
+			log.Error().Field("type", typ).Msg("invalid or unsupported store type")
+			continue
 		}
 
 		if err != nil {
