@@ -6,11 +6,11 @@ import (
 )
 
 type Metadata struct {
-	Name         string
-	IsDir        bool
-	LastModified *time.Time
-	Size         int64
-	MimeType     string
+	Name         string     `json:"name"`
+	IsDir        bool       `json:"is_dir,omitempty"`
+	LastModified *time.Time `json:"last_modified,omitempty"`
+	Size         int64      `json:"size,omitempty"`
+	MimeType     string     `json:"mime_type,omitempty"`
 }
 
 type Store interface {
