@@ -1,5 +1,10 @@
 package router
 
+// A lot of this code is more or less directly copied
+// from Go's net/http package.
+// See: https://github.com/golang/go/blob/master/src/net/http/routing_tree.go
+// License: https://github.com/golang/go/blob/master/LICENSE
+
 import (
 	"bytes"
 	"strings"
