@@ -21,13 +21,17 @@ var tpl = template.Must(template.New("").
 	}).
 	ParseFS(pages, "pages/templates/*.html"))
 
-func renderIndex(w http.ResponseWriter, dirName string, entries []*stores.Metadata) {
+func renderIndex(w http.ResponseWriter, dirName string, entries []*stores.Metadata, sortBy string, ascending bool) {
 	err := tpl.ExecuteTemplate(w, "index.html", struct {
-		DirName string
-		Entries []*stores.Metadata
+		DirName   string
+		Entries   []*stores.Metadata
+		SortBy    string
+		Ascending bool
 	}{
-		DirName: dirName,
-		Entries: entries,
+		DirName:   dirName,
+		Entries:   entries,
+		SortBy:    sortBy,
+		Ascending: ascending,
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("failed rendering index")

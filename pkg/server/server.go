@@ -85,7 +85,12 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sortBy := strings.ToLower(r.URL.Query().Get("sort-by"))
+	if sortBy == "" {
+		sortBy = "last-modified"
+	}
+
 	order := strings.ToLower(r.URL.Query().Get("order"))
+	ascending := order == "asc" || order == "ascending"
 
 	var entries []*stores.Metadata
 	for _, store := range storeEntries {
@@ -110,9 +115,9 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		slices.SortFunc(entries, getEntrySortFunc(sortBy, order == "asc" || order == "ascending"))
+		slices.SortFunc(entries, getEntrySortFunc(sortBy, ascending))
 
-		handleIndex(r, w, entries)
+		handleIndex(r, w, entries, sortBy, ascending)
 		return
 	}
 
@@ -159,10 +164,10 @@ func compareRimeRef(a, b *time.Time) int {
 	return a.Compare(*b)
 }
 
-func handleIndex(r *http.Request, w http.ResponseWriter, entries []*stores.Metadata) {
+func handleIndex(r *http.Request, w http.ResponseWriter, entries []*stores.Metadata, sortBy string, ascending bool) {
 	switch responseType(r) {
 	case ResponseTypeHTML:
-		renderIndex(w, r.URL.Path, entries)
+		renderIndex(w, r.URL.Path, entries, sortBy, ascending)
 	case ResponseTypeJSON:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_ = json.NewEncoder(w).Encode(entries)

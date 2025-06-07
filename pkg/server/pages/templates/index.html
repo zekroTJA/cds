@@ -36,6 +36,15 @@
 
     a {
       text-decoration: none;
+      color: inherit;
+    }
+
+    th > a {
+        opacity: 0;
+    }
+
+    th:hover > a, .active {
+        opacity: 1;
     }
   </style>
 </head>
@@ -44,19 +53,31 @@
 <table>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Last Modified</th>
-      <th>Size</th>
+      <th>
+        Name
+        <a href="?sort-by=name&order=asc" {{ if and (eq .SortBy "name") (.Ascending) }}class="active"{{end}}>▲</a>
+        <a href="?sort-by=name&order=desc" {{ if and (eq .SortBy "name") (not .Ascending) }}class="active"{{end}}>▼</a>
+      </th>
+      <th>
+        Last Modified
+        <a href="?sort-by=last-modified&order=asc" {{ if and (eq .SortBy "last-modified") (.Ascending) }}class="active"{{end}}>▲</a>
+        <a href="?sort-by=last-modified&order=desc" {{ if and (eq .SortBy "last-modified") (not .Ascending) }}class="active"{{end}}>▼</a>
+      </th>
+      <th>
+        Size
+        <a href="?sort-by=size&order=asc" {{ if and (eq .SortBy "size") (.Ascending) }}class="active"{{end}}>▲</a>
+        <a href="?sort-by=size&order=desc" {{ if and (eq .SortBy "size") (not .Ascending) }}class="active"{{end}}>▼</a>
+      </th>
     </tr>
   </thead>
   <tbody>
-  {{ range .Entries }}
+  {{ range $e := .Entries }}
     <tr>
       <td>
-        <a href="{{ .Name }}">{{ if .IsDir }}📂{{ else }}📄{{ end }} {{ .Name }}</a>
+        <a href="{{ $e.Name }}/?sort-by={{$.SortBy}}{{ if $.Ascending }}&order=asc{{end}}">{{ if $e.IsDir }}📂{{ else }}📄{{ end }} {{ $e.Name }}</a>
       </td>
-      <td>{{ if .LastModified }}{{ .LastModified.Format "2006-01-02 15:04:05" }}{{end}}</td>
-      <td>{{ .Size | humanBytes }}</td>
+      <td>{{ if $e.LastModified }}{{ $e.LastModified.Format "2006-01-02 15:04:05" }}{{end}}</td>
+      <td>{{ $e.Size | humanBytes }}</td>
     </tr>
   {{ end }}
   </tbody>
