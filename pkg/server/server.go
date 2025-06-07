@@ -1,9 +1,11 @@
 package server
 
 import (
+	"cmp"
 	"encoding/json"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -82,6 +84,9 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	sortBy := strings.ToLower(r.URL.Query().Get("sort-by"))
+	order := strings.ToLower(r.URL.Query().Get("order"))
+
 	var entries []*stores.Metadata
 	for _, store := range storeEntries {
 		if !store.Listable {
@@ -105,6 +110,8 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		slices.SortFunc(entries, getEntrySortFunc(sortBy, order == "asc" || order == "ascending"))
+
 		handleIndex(r, w, entries)
 		return
 	}
@@ -114,6 +121,42 @@ func (t *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (t *Server) ListenAndServe(address string) error {
 	return http.ListenAndServe(address, t)
+}
+
+func getEntrySortFunc(by string, ascending bool) func(a, b *stores.Metadata) int {
+	mult := -1
+	if ascending {
+		mult = 1
+	}
+
+	switch by {
+	case "name":
+		return func(a, b *stores.Metadata) int {
+			return strings.Compare(a.Name, b.Name) * mult
+		}
+	case "last-modified":
+		return func(a, b *stores.Metadata) int {
+			return compareRimeRef(a.LastModified, b.LastModified) * mult
+		}
+	case "size":
+		return func(a, b *stores.Metadata) int {
+			return cmp.Compare(a.Size, b.Size) * mult
+		}
+	default:
+		return getEntrySortFunc("last-modified", ascending)
+	}
+}
+
+func compareRimeRef(a, b *time.Time) int {
+	switch {
+	case a == nil && b == nil:
+		return 0
+	case a == nil:
+		return -1
+	case b == nil:
+		return 1
+	}
+	return a.Compare(*b)
 }
 
 func handleIndex(r *http.Request, w http.ResponseWriter, entries []*stores.Metadata) {
